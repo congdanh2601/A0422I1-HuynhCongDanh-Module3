@@ -21,8 +21,10 @@ room_standard varchar(45),
 other_util varchar(45),
 pool_area float,
 floor int,
-rent_type int references rent_type (id),
-service_type int references service_type (id)
+rent_type int,
+service_type int,
+foreign key (rent_type) references rent_type (id),
+foreign key (service_type) references service_type (id)
 );
 
 create table employee_position (
@@ -49,9 +51,12 @@ salary double,
 phone varchar(10),
 email varchar(45),
 address varchar(45),
-position int references employee_position (id),
-`level` int references employee_level (id),
-department int references employee_department (id)
+position int,
+`level` int,
+department int,
+foreign key (position) references employee_position (id),
+foreign key (`level`) references employee_level (id),
+foreign key (department) references employee_department (id)
 );
 
 create table customer_type (
@@ -68,7 +73,8 @@ id_card varchar(12),
 phone varchar(10),
 email varchar(45),
 address varchar(45),
-customer_type int references customer_type (id)
+customer_type int,
+foreign key (customer_type) references customer_type (id)
 );
 
 create table addition_service (
@@ -84,16 +90,21 @@ id int PRIMARY KEY auto_increment,
 start_day datetime,
 end_day datetime,
 deposit double,
-employee int references employee (id),
-customer int references customer (id),
-service int references service (id)
+employee int,
+customer int,
+service int,
+foreign key (employee) references employee (id),
+foreign key (customer) references customer (id),
+foreign key (service) references service (id)
 );
 
 create table contract_detail (
 id int PRIMARY KEY auto_increment,
 amount int,
-contract_id int references contract (id),
-addition_service int references addition_service (id)
+contract_id int,
+addition_service int,
+foreign key (contract_id) references contract (id),
+foreign key (addition_service) references addition_service (id)
 );
 
 -- 1.	Thêm mới thông tin cho tất cả các bảng có trong CSDL để có thể thoả mãn các yêu cầu bên dưới.
@@ -181,7 +192,7 @@ join customer_type t on cu.customer_type = t.id
 where cu.customer_type = 1
 group by cu.id order by count(co.id);
 
--- 5.	(CHƯA XONG tổng tiền) Hiển thị ma_khach_hang, ho_ten, ten_loai_khach, ma_hop_dong, ten_dich_vu, ngay_lam_hop_dong, ngay_ket_thuc, tong_tien
+-- 5.	Hiển thị ma_khach_hang, ho_ten, ten_loai_khach, ma_hop_dong, ten_dich_vu, ngay_lam_hop_dong, ngay_ket_thuc, tong_tien
 -- (Với tổng tiền được tính theo công thức như sau: Chi Phí Thuê + Số Lượng * Giá, với Số Lượng và Giá là từ bảng dich_vu_di_kem, hop_dong_chi_tiet)
 -- cho tất cả các khách hàng đã từng đặt phòng. (những khách hàng nào chưa từng đặt phòng cũng phải hiển thị ra).
 SELECT cu.id AS customer_id, cu.customer_name, cu.customer_type, co.id AS contract_id, s.service_name, co.start_day, 
@@ -199,19 +210,6 @@ LEFT JOIN (
 LEFT JOIN contract_detail cd ON co.id = cd.contract_id
 LEFT JOIN addition_service a ON cd.addition_service = a.id
 GROUP BY cu.id;
-
--- select cu.id as customer_id, cu.customer_name, t.customer_type_name as customer_type, co.id as contract_id, s.service_name,
--- co.start_day, co.end_day, s.price as service_price, cd.amount, a.price
--- from customer cu
--- left join customer_type t on cu.customer_type = t.id
--- left join contract co on cu.id = co.customer
--- left join service s on co.service = s.id
--- left join contract_detail cd on co.id = cd.contract_id
--- left join addition_service a on cd.addition_service = a.id
--- group by cu.id;
--- select c.id, cd.amount, a.price from contract_detail cd
--- join addition_service a on cd.addition_service = a.id
--- join contract c on c.id = cd.contract_id;
 
 -- 6.	Hiển thị ma_dich_vu, ten_dich_vu, dien_tich, chi_phi_thue, ten_loai_dich_vu của tất cả các loại dịch vụ 
 -- chưa từng được khách hàng thực hiện đặt từ (trong) quý 1 của năm 2021 (Quý 1 là tháng 1, 2, 3).
@@ -235,8 +233,8 @@ GROUP BY c.service;
 -- 8.	Hiển thị thông tin ho_ten khách hàng có trong hệ thống, với yêu cầu ho_ten không trùng nhau.
 -- Học viên sử dụng theo 3 cách khác nhau để thực hiện yêu cầu trên.
 SELECT DISTINCT customer_name FROM customer;
-
-
+SELECT customer_name FROM customer GROUP BY customer_name;
+SELECT customer_name FROM customer UNION SELECT customer_name FROM customer;
 
 -- 9.	Thực hiện thống kê doanh thu theo tháng, nghĩa là tương ứng với mỗi tháng trong năm 2021 thì sẽ có bao nhiêu khách hàng thực hiện đặt phòng.
 SELECT MONTH(start_day) AS `month`, count(id) AS number_of_booking
@@ -360,11 +358,13 @@ WHERE id IN (SELECT addition_service_id FROM addition_service_with_usage);
 
 -- 20.	Hiển thị thông tin của tất cả các nhân viên và khách hàng có trong hệ thống,
 -- thông tin hiển thị bao gồm id (ma_nhan_vien, ma_khach_hang), ho_ten, email, so_dien_thoai, ngay_sinh, dia_chi.
-SELECT id, customer_name, email, phone, birthday, address
-FROM customer;
+SELECT id, customer_name AS `name`, email, phone, birthday, address
+FROM customer 
+UNION
 SELECT id, employee_name, email, phone, birthday, address
 FROM employee;
 
+-- ADVANCED SQL
 -- 21.	Tạo khung nhìn có tên là v_nhan_vien để lấy được thông tin của tất cả các nhân viên có địa chỉ là “Hải Châu” và đã từng lập hợp đồng cho một
 -- hoặc nhiều khách hàng bất kì với ngày lập hợp đồng là “12/12/2019”.
 CREATE VIEW v_employee AS (
@@ -372,28 +372,54 @@ SELECT e.id AS employee_id, e.employee_name, e.address, c.start_day
 FROM employee e
 JOIN contract c ON c.employee = e.id
 WHERE e.address like '%Hải Châu%' AND c.start_day = '2019-12-12'
-GROUP BY e.id)
+GROUP BY e.id);
 
 -- 22.	Thông qua khung nhìn v_nhan_vien thực hiện cập nhật địa chỉ thành “Liên Chiểu” đối với tất cả các nhân viên được nhìn thấy bởi khung nhìn này.
-
+UPDATE employee SET address = 'Liên Chiểu'
+WHERE id in (SELECT employee_id FROM v_employee);
 
 -- 23.	Tạo Stored Procedure sp_xoa_khach_hang dùng để xóa thông tin của một khách hàng nào đó với ma_khach_hang được truyền vào như là 1 tham số của
 -- sp_xoa_khach_hang.
-
+DELIMITER //
+CREATE PROCEDURE sp_delete_customer(id int)
+BEGIN
+DELETE FROM customer c
+WHERE c.id = id;
+END //
+DELIMITER ;
+CALL sp_delete_customer(2);
 
 -- 24.	Tạo Stored Procedure sp_them_moi_hop_dong dùng để thêm mới vào bảng hop_dong với yêu cầu sp_them_moi_hop_dong phải thực hiện kiểm tra tính hợp lệ của 
 -- dữ liệu bổ sung, với nguyên tắc không được trùng khóa chính và đảm bảo toàn vẹn tham chiếu đến các bảng liên quan.
-
+DELIMITER //
+CREATE PROCEDURE sp_add_new_contract (id int)
+BEGIN
+IF id NOT IN (SELECT c.id FROM contract c) THEN
+INSERT INTO contract (id) VALUE (id);
+END IF;
+END //
+DELIMITER ;
+CALL sp_add_new_contract(51);
+SELECT * FROM contract;
 
 -- 25.	Tạo Trigger có tên tr_xoa_hop_dong khi xóa bản ghi trong bảng hop_dong thì hiển thị tổng số lượng bản ghi còn lại có trong bảng hop_dong ra giao diện
 -- console của database. Lưu ý: Đối với MySQL thì sử dụng SIGNAL hoặc ghi log thay cho việc ghi ở console.
+-- DELIMITER //
+-- CREATE TRIGGER tr_delete_contract
+-- AFTER DELETE ON contract
+-- FOR EACH ROW 
+-- BEGIN
+-- END //
+-- DELIMITER ;
 
 
 -- 26.	Tạo Trigger có tên tr_cap_nhat_hop_dong khi cập nhật ngày kết thúc hợp đồng, cần kiểm tra xem thời gian cập nhật có phù hợp hay không, với quy tắc sau:
 -- Ngày kết thúc hợp đồng phải lớn hơn ngày làm hợp đồng ít nhất là 2 ngày. Nếu dữ liệu hợp lệ thì cho phép cập nhật, nếu dữ liệu không hợp lệ thì in ra thông báo
 -- “Ngày kết thúc hợp đồng phải lớn hơn ngày làm hợp đồng ít nhất là 2 ngày” trên console của database.
 -- Lưu ý: Đối với MySQL thì sử dụng SIGNAL hoặc ghi log thay cho việc ghi ở console.
-
+-- DELIMITER //
+-- CREATE TRIGGER tr_update_contract_end_day
+-- DELIMITER ;
 
 -- 27.	Tạo Function thực hiện yêu cầu sau:
 -- a.	Tạo Function func_dem_dich_vu: Đếm các dịch vụ đã được sử dụng với tổng tiền là > 2.000.000 VNĐ.
