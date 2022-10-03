@@ -246,7 +246,7 @@ GROUP BY `month`;
 
 -- 10.	Hiển thị thông tin tương ứng với từng hợp đồng thì đã sử dụng bao nhiêu dịch vụ đi kèm. Kết quả hiển thị bao gồm
 -- ma_hop_dong, ngay_lam_hop_dong, ngay_ket_thuc, tien_dat_coc, so_luong_dich_vu_di_kem (được tính dựa trên việc sum so_luong ở dich_vu_di_kem).
-SELECT c.id, c.start_day, c.end_day, c.deposit, sum(cd.amount) AS number_of_addition_service
+SELECT c.id AS contract_id, c.start_day, c.end_day, c.deposit, sum(cd.amount) AS number_of_addition_service
 FROM contract c
 LEFT JOIN contract_detail cd ON c.id = cd.contract_id
 GROUP BY c.id;
@@ -275,28 +275,91 @@ GROUP BY co.id;
 
 -- 13.	Hiển thị thông tin các Dịch vụ đi kèm được sử dụng nhiều nhất bởi các Khách hàng đã đặt phòng.
 -- (Lưu ý là có thể có nhiều dịch vụ có số lần sử dụng nhiều như nhau).
-
+CREATE VIEW addition_service_usage AS
+SELECT a.id, a.addition_service_name, sum(cd.amount) AS number_of_usage
+FROM addition_service a
+LEFT JOIN contract_detail cd on cd.addition_service = a.id
+GROUP BY a.id;
+SELECT m.id, m.addition_service_name, m.number_of_usage
+FROM (SELECT * FROM addition_service_usage) m
+WHERE m.number_of_usage = (SELECT max(number_of_usage) FROM addition_service_usage)
+GROUP BY m.id;
 
 -- 14.	Hiển thị thông tin tất cả các Dịch vụ đi kèm chỉ mới được sử dụng một lần duy nhất. 
 -- Thông tin hiển thị bao gồm ma_hop_dong, ten_loai_dich_vu, ten_dich_vu_di_kem, so_lan_su_dung (được tính dựa trên việc count các ma_dich_vu_di_kem).
-
+SELECT c.id, st.service_type_name, a.addition_service_name, count(cd.addition_service) AS addition_service_usage_times
+FROM contract c
+LEFT JOIN service s ON s.id = c.service
+LEFT JOIN service_type st ON st.id = s.service_type
+LEFT JOIN contract_detail cd ON cd.contract_id = c.id
+LEFT JOIN addition_service a ON a.id = cd.addition_service
+GROUP BY a.id
+HAVING addition_service_usage_times = 1;
 
 -- 15.	Hiển thi thông tin của tất cả nhân viên bao gồm ma_nhan_vien, ho_ten, ten_trinh_do, ten_bo_phan, so_dien_thoai, dia_chi 
 -- mới chỉ lập được tối đa 3 hợp đồng từ năm 2020 đến 2021.
-
+SELECT e.id AS employee_id, e.employee_name, e.level, e.department, e.phone, e.address, count(c.id) AS number_of_contracts
+FROM employee e
+LEFT JOIN contract c ON c.employee = e.id
+WHERE YEAR(c.start_day) in (2020, 2021)
+GROUP BY e.id
+HAVING number_of_contracts <= 3;
 
 -- 16.	Xóa những Nhân viên chưa từng lập được hợp đồng nào từ năm 2019 đến năm 2021.
-
+DELETE FROM employee e
+WHERE e.id NOT IN (
+SELECT c.employee
+FROM contract c 
+WHERE YEAR(start_day) IN (2019, 2020, 2021)
+);
 
 -- 17.	Cập nhật thông tin những khách hàng có ten_loai_khach từ Platinum lên Diamond, chỉ cập nhật những khách hàng đã từng đặt phòng 
 -- với Tổng Tiền thanh toán trong năm 2021 là lớn hơn 10.000.000 VNĐ.
+CREATE VIEW customer_platinum_money_bigger_10000000 AS
+(SELECT cu.id AS customer_id, ct.id AS customer_type_id, ssp.sum_service_price + sum(a.price * cd.amount) as total_money
+FROM customer cu
+LEFT JOIN customer_type ct on ct.id = cu.customer_type
+LEFT JOIN contract co ON cu.id = co.customer
+LEFT JOIN service s ON co.service = s.id
+LEFT JOIN (
+	SELECT cu.id AS customer_id, sum(s.price) as sum_service_price
+    FROM customer cu
+	LEFT JOIN contract co ON cu.id = co.customer
+    LEFT JOIN service s ON co.service = s.id
+    GROUP BY cu.id
+) ssp ON cu.id = ssp.customer_id
+LEFT JOIN contract_detail cd ON co.id = cd.contract_id
+LEFT JOIN addition_service a ON cd.addition_service = a.id
+WHERE ct.id = 2
+GROUP BY cu.id
+HAVING total_money > 10000000);
 
+UPDATE customer c SET c.customer_type = 1
+WHERE c.customer_type IN (SELECT customer_type_id FROM customer_platinum_money_bigger_10000000);
 
 -- 18.	Xóa những khách hàng có hợp đồng trước năm 2021 (chú ý ràng buộc giữa các bảng).
-
+DELETE FROM customer cu
+WHERE cu.id IN
+(SELECT c.customer
+FROM contract c
+WHERE YEAR(c.start_day) < 2021);
 
 -- 19.	Cập nhật giá cho các dịch vụ đi kèm được sử dụng trên 10 lần trong năm 2020 lên gấp đôi.
-
+CREATE VIEW addition_service_with_usage AS (
+SELECT a.id AS addition_service_id, a.addition_service_name, sum(cd.amount) AS number_of_usage
+FROM contract c
+JOIN contract_detail cd ON cd.contract_id = c.id
+JOIN addition_service a ON a.id = cd.addition_service
+GROUP BY addition_service_id
+HAVING number_of_usage > 10
+);
+UPDATE addition_service
+SET price = price * 2
+WHERE id IN (SELECT addition_service_id FROM addition_service_with_usage);
 
 -- 20.	Hiển thị thông tin của tất cả các nhân viên và khách hàng có trong hệ thống,
 -- thông tin hiển thị bao gồm id (ma_nhan_vien, ma_khach_hang), ho_ten, email, so_dien_thoai, ngay_sinh, dia_chi.
+SELECT id, customer_name, email, phone, birthday, address
+FROM customer;
+SELECT id, employee_name, email, phone, birthday, address
+FROM employee;
