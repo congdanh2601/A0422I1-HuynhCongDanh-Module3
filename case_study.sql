@@ -336,11 +336,13 @@ UPDATE customer c SET c.customer_type = 1
 WHERE c.customer_type IN (SELECT customer_type_id FROM customer_platinum_money_bigger_10000000);
 
 -- 18.	Xóa những khách hàng có hợp đồng trước năm 2021 (chú ý ràng buộc giữa các bảng).
+set foreign_key_checks = 0;
 DELETE FROM customer cu
 WHERE cu.id IN
 (SELECT c.customer
 FROM contract c
 WHERE YEAR(c.start_day) < 2021);
+set foreign_key_checks = 1;
 
 -- 19.	Cập nhật giá cho các dịch vụ đi kèm được sử dụng trên 10 lần trong năm 2020 lên gấp đôi.
 CREATE VIEW addition_service_with_usage AS (
@@ -404,14 +406,20 @@ SELECT * FROM contract;
 
 -- 25.	Tạo Trigger có tên tr_xoa_hop_dong khi xóa bản ghi trong bảng hop_dong thì hiển thị tổng số lượng bản ghi còn lại có trong bảng hop_dong ra giao diện
 -- console của database. Lưu ý: Đối với MySQL thì sử dụng SIGNAL hoặc ghi log thay cho việc ghi ở console.
--- DELIMITER //
--- CREATE TRIGGER tr_delete_contract
--- AFTER DELETE ON contract
--- FOR EACH ROW 
--- BEGIN
--- END //
--- DELIMITER ;
-
+create table if not exists number_of_contracts_log (
+number_of_contract int
+);
+DELIMITER //
+CREATE TRIGGER tr_delete_contract
+AFTER DELETE ON contract
+FOR EACH ROW 
+BEGIN
+declare c int;
+select count(id) into c from contract;
+insert into number_of_contract_log value (c);
+END //
+DELIMITER ;
+select * from number_of_contract_log;
 
 -- 26.	Tạo Trigger có tên tr_cap_nhat_hop_dong khi cập nhật ngày kết thúc hợp đồng, cần kiểm tra xem thời gian cập nhật có phù hợp hay không, với quy tắc sau:
 -- Ngày kết thúc hợp đồng phải lớn hơn ngày làm hợp đồng ít nhất là 2 ngày. Nếu dữ liệu hợp lệ thì cho phép cập nhật, nếu dữ liệu không hợp lệ thì in ra thông báo
@@ -419,17 +427,53 @@ SELECT * FROM contract;
 -- Lưu ý: Đối với MySQL thì sử dụng SIGNAL hoặc ghi log thay cho việc ghi ở console.
 -- DELIMITER //
 -- CREATE TRIGGER tr_update_contract_end_day
+-- AFTER UPDATE ON contract
+-- FOR EACH ROW
+-- BEGIN
+-- IF datediff(new.end_day, old.star_day) >= 2 THEN
+
+-- END //
 -- DELIMITER ;
 
 -- 27.	Tạo Function thực hiện yêu cầu sau:
 -- a.	Tạo Function func_dem_dich_vu: Đếm các dịch vụ đã được sử dụng với tổng tiền là > 2.000.000 VNĐ.
-
+DELIMITER //
+CREATE FUNCTION func_count_service()
+RETURNS int
+DETERMINISTIC
+BEGIN
+DECLARE count int;
+SELECT count(*) into count From (
+SELECT c.id, sum(price) as total_price from contract c 
+join service s ON s.id = c.service
+GROUP BY s.id
+HAVING total_price > 2000000) tmp;
+RETURN count;
+END //
+DELIMITER ;
+select func_count_service();
 
 -- b.	Tạo Function func_tinh_thoi_gian_hop_dong: Tính khoảng thời gian dài nhất tính từ lúc bắt đầu làm hợp đồng đến lúc kết thúc hợp đồng mà khách hàng
 -- đã thực hiện thuê dịch vụ (lưu ý chỉ xét các khoảng thời gian dựa vào từng lần làm hợp đồng thuê dịch vụ, không xét trên toàn bộ các lần làm hợp đồng).
 -- Mã của khách hàng được truyền vào như là 1 tham số của function này.
-
+DELIMITER //
+CREATE FUNCTION func_cal_longest_time(in_customer_id int)
+RETURNS int
+DETERMINISTIC
+BEGIN
+DECLARE longest_time INT;
+DECLARE para int;
+SET para = in_customer_id;
+SELECT max(tmp.stay_period_in_day) into longest_time
+FROM 
+(SELECT datediff(end_day, start_day) AS stay_period_in_day
+FROM contract co
+JOIN customer cu ON cu.id = co.customer
+WHERE cu.id = para) tmp;
+RETURN longest_time;
+END //
+SELECT func_cal_longest_time(3);
 
 -- 28.	Tạo Stored Procedure sp_xoa_dich_vu_va_hd_room để tìm các dịch vụ được thuê bởi khách hàng với loại dịch vụ là “Room” từ đầu năm 2015 đến hết năm 2019
--- để xóa thông tin của các dịch vụ đó (tức là xóa các bảng ghi trong bảng dich_vu) và xóa những hop_dong sử dụng dịch vụ liên quan (tức là phải xóa những
+-- để xóa thông tin của các dịch vụ đó (tức là xóa các bản ghi trong bảng dich_vu) và xóa những hop_dong sử dụng dịch vụ liên quan (tức là phải xóa những
 -- bản ghi trong bảng hop_dong) và những bản liên quan khác.
