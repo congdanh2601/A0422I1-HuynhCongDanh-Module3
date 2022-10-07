@@ -425,15 +425,15 @@ select * from number_of_contract_log;
 -- Ngày kết thúc hợp đồng phải lớn hơn ngày làm hợp đồng ít nhất là 2 ngày. Nếu dữ liệu hợp lệ thì cho phép cập nhật, nếu dữ liệu không hợp lệ thì in ra thông báo
 -- “Ngày kết thúc hợp đồng phải lớn hơn ngày làm hợp đồng ít nhất là 2 ngày” trên console của database.
 -- Lưu ý: Đối với MySQL thì sử dụng SIGNAL hoặc ghi log thay cho việc ghi ở console.
--- DELIMITER //
--- CREATE TRIGGER tr_update_contract_end_day
--- AFTER UPDATE ON contract
--- FOR EACH ROW
--- BEGIN
--- IF datediff(new.end_day, old.star_day) >= 2 THEN
-
--- END //
--- DELIMITER ;
+DELIMITER //
+CREATE TRIGGER tr_update_contract_end_day
+AFTER UPDATE ON contract
+FOR EACH ROW
+BEGIN
+IF datediff(new.end_day, old.star_day) < 2 THEN signal SQLSTATE '02000' set MESSAGE_TEXT = 'Invaild start date';
+END IF;
+END //
+DELIMITER ;
 
 -- 27.	Tạo Function thực hiện yêu cầu sau:
 -- a.	Tạo Function func_dem_dich_vu: Đếm các dịch vụ đã được sử dụng với tổng tiền là > 2.000.000 VNĐ.
@@ -476,4 +476,20 @@ SELECT func_cal_longest_time(3);
 
 -- 28.	Tạo Stored Procedure sp_xoa_dich_vu_va_hd_room để tìm các dịch vụ được thuê bởi khách hàng với loại dịch vụ là “Room” từ đầu năm 2015 đến hết năm 2019
 -- để xóa thông tin của các dịch vụ đó (tức là xóa các bản ghi trong bảng dich_vu) và xóa những hop_dong sử dụng dịch vụ liên quan (tức là phải xóa những
--- bản ghi trong bảng hop_dong) và những bản liên quan khác.
+-- bản ghi trong bảng hop_dong) và những bảng liên quan khác.
+DELIMITER //
+CREATE PROCEDURE sp_delete_service_contract_room()
+BEGIN
+SET @myvar:= (SELECT DISTINCT GROUP_CONCAT(c.id)
+FROM contract c
+JOIN service s ON c.service = s.id
+JOIN service_type st ON st.id = s.service_type
+WHERE st.service_type_name = 'Room' AND YEAR(c.start_day) BETWEEN 2015 and 2019);
+DELETE FROM contract_detail WHERE FIND_IN_SET(contract_id, @myvar);
+DELETE FROM contract WHERE FIND_IN_SET(id, @myvar);
+DELETE FROM service WHERE id IN (
+	SELECT service FROM contract
+    WHERE FIND_IN_SET(id, @myvar)
+	);
+END //
+DELIMITER ;
