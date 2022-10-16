@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Phim Hoạt Hình</title>
+    <link rel="stylesheet" href="anime_css.css">
+</head>
+<body>
+<!--1. Title-->
+<div class="row" id="head">
+    <p style="font-style: italic">Phim<span style="background-color: #d63031; color: white; border-radius: 10px">Ho<img
+            src="streamlinehq-smiley-crazy-messages-chat-48.png" height="25"
+            width="25"/>tHình</span></p>
+</div>
+
+<!--2. Head links-->
+<div id="headLink">
+    <a href="">Phim hoạt hình</a>
+    <a href="">Phim hoạt hình yêu thích</a>
+    <a href="">Nhân vật hoạt hình</a>
+    <a href="" style="border-right: none">Góp ý</a>
+</div>
+
+<!--3. Side and Main-->
+<div class="row">
+
+    <!--3.1. Recommended films-->
+    <div class="col-l-4" id="side">
+        <div>
+            <a href=#head name="https://www.youtube.com/embed/RCuFBmMCZFs"
+               onclick="openInMain(this.name)">
+                <img src="chiec-guong.png">
+                <p style="margin-bottom: 15px">[S9] Doraemon - Tập 464 - Chiếc Gương Đảo Ngược Thế Giới - Hoạt Hình
+                    Tiếng
+                    Việt - <span class="view">3.658.208 lượt xem . 4 thg 10, 2022</span></p>
+            </a>
+        </div>
+        <div>
+            <a href=#head name="https://www.youtube.com/embed/NllKnm8V6sA" onclick="openInMain(this.name)">
+                <img src="sinh-nhat-rong-tui.png">
+                <p style="margin-bottom: 15px">[S7] Tuyển Tập Doraemon - Phần 59 - Ngày Sinh Nhật Rỗng Túi Của Suneo,
+                    Triệu
+                    Phú Nobita - <span class="view">51.380.333 lượt xem . Đã công chiếu vào 4 thg 11, 2019</span></p>
+            </a>
+        </div>
+        <div>
+            <a href=#head name="https://www.youtube.com/embed/AHDOYVmJt9A" onclick="openInMain(this.name)">
+                <img src="hon-da-ky-luc.png">
+                <p style="margin-bottom: 15px">[S9] Doraemon - Tập 435 - Jaian Đấu Với Quái Vật - Hòn Đá Kỷ Lục Thế Giới
+                    -
+                    Hoạt Hình Tiếng Việt - <span class="view">11.976.803 lượt xem . 19 thg 7, 2022</span></p>
+            </a>
+        </div>
+    </div>
+
+
+    <!--3.2. Main-->
+    <div class="col-l-8" id="main">
+        <iframe style="display: block; margin: 0 auto" width="560" height="315"
+                src="https://www.youtube.com/embed/RCuFBmMCZFs" title="YouTube video player" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen></iframe>
+    </div>
+</div>
+
+<!--4. Footer -->
+<div class="row" id="foot">
+    <p>&copy;2017 - Thiết kế web bởi trang hoathinhvn.net</p>
+</div>
+</body>
+<script>
+    function openInMain(link) {
+        document.getElementById('main').innerHTML = '<iframe style="display: block; margin: 0 auto" width="560" height="315"\n' +
+            '                src="' + link + '" title="YouTube video player" frameborder="0"\n' +
+            '                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"\n' +
+            '                allowfullscreen></iframe>';
+    }
+</script>
+</html>
