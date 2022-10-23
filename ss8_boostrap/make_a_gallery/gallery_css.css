@@ -42,3 +42,29 @@
 .col-l-11 {width: 91.66667%;}
 .col-l-12 {width: 100%;}
 }
+
+section {
+    margin: 0;
+    padding: 0 6px;
+}
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+section img {
+    width: 100%;
+}
+
+section p {
+    border: solid 1px lightgrey;
+    text-align: center;
+    padding: 10px;
+}
+
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
