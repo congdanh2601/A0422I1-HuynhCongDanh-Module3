@@ -50,7 +50,7 @@ public class ProductServlet extends HttpServlet {
                 writer.println("</html>");
                 break;
             case "update":
-                int idForUpdate = Integer.parseInt(request.getParameter("idForDelete"));
+                int idForUpdate = Integer.parseInt(request.getParameter("idForUpdate"));
                 for (Product p : productList) {
                     if(p.getId() == idForUpdate) {
                         productToUpdate = p;
