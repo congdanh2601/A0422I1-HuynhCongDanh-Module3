@@ -1,12 +1,15 @@
 package service;
 
 import model.User;
+import repository.IUserRepository;
 import repository.UserRepository;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 
 public class UserService implements IUserService {
-    UserRepository repository = new UserRepository();
+    IUserRepository repository = new UserRepository();
     @Override
     public void insertUser(User user) {
         repository.insertUser(user);
@@ -24,12 +27,12 @@ public class UserService implements IUserService {
 
     @Override
     public boolean deleteUser(int id) {
-        return repository.deleteUser(id);
+        return repository.callDelete(id);
     }
 
     @Override
     public boolean updateUser(User user) {
-        return repository.updateUser(user);
+        return repository.callUpdate(user);
     }
 
     public List<User> findByCountry(String country) {
@@ -38,5 +41,9 @@ public class UserService implements IUserService {
 
     public List<User> sortByName() {
         return repository.sortByName();
+    }
+
+    public List<User> callList() {
+        return repository.callList();
     }
 }

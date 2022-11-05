@@ -5,42 +5,59 @@
   Time: 1:06 AM
   To change this template use File | Settings | File Templates.
 --%>
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <html>
 <head>
-    <title>User List</title>
-    <style>
-        table, th, td {
-            border: solid 1px #bdc3c7;
-            border-collapse: collapse;
-            padding: 3px;
-            }
-
-        th {
-            width: 120px;
-        }
-    </style>
+    <title>User Management Application</title>
 </head>
 <body>
-<h1>List of Users</h1>
-<table>
-    <tr>
-        <th>User ID</th>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Country</th>
-    </tr>
-    <c:forEach var="user" items="${list}">
+<center>
+    <h1>User Management</h1>
+    <h2>
+        <a href="/view/user/create.jsp">Add New User</a>
+    </h2>
+    <form action="/servlet">
+        <input type="text" name="action" value="find" hidden>
+        <span>Find by country: </span>
+        <input type="text" name="country">
+        <input type="submit" value="Find">
+    </form>
+</center>
+<div align="center">
+    <table border="1" cellpadding="5">
+        <caption><h2>List of Users</h2></caption>
+        <c:if test="${mess != null}">
+            <p style="color: red">${mess}</p>
+        </c:if>
+        <form action="/servlet">
+            <input type="text" name="action" value="sort" hidden>
+            <input type="submit" value="Sort by name">
+        </form>
+        <span> </span>
+        <form action="/index.jsp">
+            <input type="submit" value="Un-sort">
+        </form>
         <tr>
-            <td>${user.getId()}</td>
-            <td>${user.getName()}</td>
-            <td>${user.getEmail()}</td>
-            <td>${user.getCountry()}</td>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Country</th>
+            <th>Actions</th>
         </tr>
-    </c:forEach>
-</table>
-<br>
-<a href="/index.jsp">Back to main menu</a>
+        <c:forEach var="user" items="${list}">
+            <tr>
+                <td><c:out value="${user.getId()}"/></td>
+                <td><c:out value="${user.getName()}"/></td>
+                <td><c:out value="${user.getEmail()}"/></td>
+                <td><c:out value="${user.getCountry()}"/></td>
+                <td>
+                    <a href="/servlet?action=update&id=${user.getId()}">Edit</a>
+                    <a href="/servlet?action=delete&id=${user.getId()}">Delete</a>
+                </td>
+            </tr>
+        </c:forEach>
+    </table>
+</div>
 </body>
 </html>

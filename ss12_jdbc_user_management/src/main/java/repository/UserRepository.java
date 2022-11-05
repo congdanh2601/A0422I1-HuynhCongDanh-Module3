@@ -18,6 +18,8 @@ public class UserRepository implements IUserRepository {
     private final String UPDATE_USER = "update users set name = ?, email = ?, country = ? where id = ?;";
     private final String FIND_BY_COUNTRY = "select * from users where country = ?;";
     private final String SORT_BY_NAME = "select * from users order by name;";
+    private final String CALL_DISPLAY_USERS = "call display_users;";
+    private final String CALL_UPDATE_USER = "call update_user_with_id(?, ?, ?, ?);";
     PreparedStatement ps;
 
     @Override
@@ -125,7 +127,7 @@ public class UserRepository implements IUserRepository {
         return null;
     }
 
-    private List<User> getList(List<User> list, ResultSet resultSet) throws SQLException {
+    public List<User> getList(List<User> list, ResultSet resultSet) throws SQLException {
         while (resultSet.next()) {
             int id = resultSet.getInt("id"); //id,name,email,country
             String name = resultSet.getString("name");
@@ -134,5 +136,42 @@ public class UserRepository implements IUserRepository {
             list.add(new User(id, name, email, country));
         }
         return list;
+    }
+
+    public List<User> callList() {
+        List<User> list = new ArrayList<>();
+        try {
+            ps = connection.prepareStatement(CALL_DISPLAY_USERS);
+            ResultSet resultSet = ps.executeQuery();
+            return getList(list, resultSet);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public boolean callUpdate(User user) {
+        try {
+            ps = connection.prepareStatement(CALL_UPDATE_USER);
+            ps.setInt(1, user.getId());
+            ps.setString(2, user.getName());
+            ps.setString(3, user.getEmail());
+            ps.setString(4, user.getCountry());
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean callDelete(int id) {
+        try {
+            ps = connection.prepareStatement(DELETE_USER_BY_ID);
+            ps.setInt(1, id);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }

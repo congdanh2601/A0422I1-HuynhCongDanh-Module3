@@ -1,6 +1,7 @@
 package controller;
 
 import model.User;
+import service.IUserService;
 import service.UserService;
 
 import javax.servlet.ServletException;
@@ -15,7 +16,7 @@ import java.util.List;
 
 @WebServlet(name = "UserServlet", value = "/servlet")
 public class UserServlet extends HttpServlet {
-    UserService service = new UserService();
+    IUserService service = new UserService();
     PrintWriter writer;
     String action;
 
@@ -25,37 +26,23 @@ public class UserServlet extends HttpServlet {
         writer = response.getWriter();
         switch (action) {
             case "show":
-                List<User> list = service.selectAllUsers();
-                request.setAttribute("list", list);
-                request.getRequestDispatcher("/view/user/show.jsp").forward(request, response);
+                showList(request, response);
                 break;
             case "update":
-                int id = Integer.parseInt(request.getParameter("idForUpdate"));
-                User userForUpdate = service.selectUser(id);
-                if (userForUpdate != null) {
-                    request.setAttribute("user", userForUpdate);
-                    request.getRequestDispatcher("/view/user/update.jsp").forward(request, response);
-                } else {
-                    writer.println("<html>");
-                    writer.println("<p>Can't find any user with that id!</p>");
-                    writer.println("<a href=\"/index.jsp\">Back to main menu</a>");
-                    writer.println("</html>");
-                }
+                showFormUpdate(request, response);
                 break;
             case "delete":
-                int idForDelete = Integer.parseInt(request.getParameter("idForDelete"));
+                int idForDelete = Integer.parseInt(request.getParameter("id"));
                 service.deleteUser(idForDelete);
-                writer.println("<html>");
-                writer.println("<p>User deleted!</p>");
-                writer.println("<a href=\"/index.jsp\">Back to main menu</a>");
-                writer.println("</html>");
+                request.setAttribute("mess","User delete");
+                showList(request, response);
                 break;
             case "find":
-                String countryToFind = request.getParameter("countryToFind");
+                String countryToFind = request.getParameter("country");
                 List usersInCountry = service.findByCountry(countryToFind);
                 request.setAttribute("list", usersInCountry);
                 request.setAttribute("country", countryToFind);
-                request.getRequestDispatcher("view/user/find.jsp").forward(request, response);
+                request.getRequestDispatcher("/view/user/show.jsp").forward(request, response);
                 break;
             case "sort":
                 List<User> sortedList = service.sortByName();
@@ -63,6 +50,19 @@ public class UserServlet extends HttpServlet {
                 request.getRequestDispatcher("/view/user/show.jsp").forward(request, response);
                 break;
         }
+    }
+
+    private void showFormUpdate(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        int id = Integer.parseInt(request.getParameter("id"));
+        User userForUpdate = service.selectUser(id);
+        request.setAttribute("user", userForUpdate);
+        request.getRequestDispatcher("/view/user/update.jsp").forward(request, response);
+    }
+
+    private void showList(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        List<User> list = service.callList();
+        request.setAttribute("list", list);
+        request.getRequestDispatcher("view/user/show.jsp").forward(request, response);
     }
 
     @Override
@@ -82,17 +82,19 @@ public class UserServlet extends HttpServlet {
                 writer.println("</html>");
                 break;
             case "update":
-                int id = Integer.parseInt(request.getParameter("id"));
-                String nameForUpdate = request.getParameter("name");
-                String emailForUpdate = request.getParameter("email");
-                String countryForUpdate = request.getParameter("country");
-                User userForUpdate = new User(id, nameForUpdate, emailForUpdate, countryForUpdate);
-                service.updateUser(userForUpdate);
-                writer.println("<html>");
-                writer.println("<p>User updated!</p>");
-                writer.println("<a href=\"/index.jsp\">Back to main menu</a>");
-                writer.println("</html>");
+                updateUser(request, response);
                 break;
         }
+    }
+
+    private void updateUser(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        int id = Integer.parseInt(request.getParameter("id"));
+        String nameForUpdate = request.getParameter("name");
+        String emailForUpdate = request.getParameter("email");
+        String countryForUpdate = request.getParameter("country");
+        User userForUpdate = new User(id, nameForUpdate, emailForUpdate, countryForUpdate);
+        service.updateUser(userForUpdate);
+        request.setAttribute("mess", "User updated");
+        showList(request, response);
     }
 }
