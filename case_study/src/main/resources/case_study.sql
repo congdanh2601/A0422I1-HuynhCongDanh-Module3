@@ -304,6 +304,7 @@ GROUP BY e.id
 HAVING number_of_contracts <= 3;
 
 -- 16.	Xóa những Nhân viên chưa từng lập được hợp đồng nào từ năm 2019 đến năm 2021.
+-- set sql_safe_updates = 0; 
 DELETE FROM employee e
 WHERE e.id NOT IN (
 SELECT c.employee
